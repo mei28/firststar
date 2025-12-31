@@ -1,0 +1,45 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: youtube-finder-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - youtube-finder-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: youtube-finder-postgres
+    environment:
+      POSTGRES_DB: youtube_channels
+      POSTGRES_USER: youtube_finder
+      POSTGRES_PASSWORD: youtube_finder_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U youtube_finder"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - youtube-finder-network
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  youtube-finder-network:
+    driver: bridge
