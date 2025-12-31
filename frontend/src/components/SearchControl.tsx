@@ -30,15 +30,18 @@ export function SearchControl() {
   });
 
   const handleSearch = () => {
-    if (confirm(`${maxResults}件/キーワードで検索を実行しますか?\n\n※ APIクォータを消費します（約900 units）`)) {
+    const estimatedUnits = Math.ceil(maxResults / 50) * 900;
+    if (confirm(`${maxResults}件/キーワードで検索を実行しますか?\n\n※ APIクォータを消費します（約${estimatedUnits.toLocaleString()} units）`)) {
       searchMutation.mutate(maxResults);
     }
   };
 
-  const quotaUsed = quotaData?.quota_used || 0;
-  const quotaLimit = quotaData?.quota_limit || 10000;
-  const quotaRemaining = quotaLimit - quotaUsed;
+  const quotaUsed = quotaData?.quota?.used || 0;
+  const quotaLimit = quotaData?.quota?.limit || 10000;
+  const quotaRemaining = quotaData?.quota?.remaining || (quotaLimit - quotaUsed);
   const quotaPercentage = (quotaUsed / quotaLimit) * 100;
+  const estimatedUnits = Math.ceil(maxResults / 50) * 900;
+  const hasEnoughQuota = quotaRemaining >= estimatedUnits;
 
   return (
     <Card className="mb-6 border-slate-300">
@@ -74,8 +77,8 @@ export function SearchControl() {
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>残り: {quotaRemaining.toLocaleString()} units</span>
-            {quotaData?.reset_at && (
-              <span>• リセット: {new Date(quotaData.reset_at).toLocaleString('ja-JP')}</span>
+            {quotaData?.quota?.reset_at && (
+              <span>• リセット: {new Date(quotaData.quota.reset_at).toLocaleString('ja-JP')}</span>
             )}
           </div>
         </div>
@@ -89,14 +92,14 @@ export function SearchControl() {
             <Input
               type="number"
               min="5"
-              max="50"
+              max="200"
               value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
               className="w-24"
             />
             <span className="text-sm text-slate-600">件/キーワード</span>
             <Badge variant="outline" className="ml-auto">
-              約900 units消費
+              約{Math.ceil(maxResults / 50) * 900} units消費
             </Badge>
           </div>
           <p className="text-xs text-slate-500">
@@ -108,7 +111,7 @@ export function SearchControl() {
         <div className="flex gap-2">
           <Button
             onClick={handleSearch}
-            disabled={searchMutation.isPending || quotaRemaining < 900}
+            disabled={searchMutation.isPending || !hasEnoughQuota}
             className="flex-1"
           >
             {searchMutation.isPending ? (
@@ -132,9 +135,11 @@ export function SearchControl() {
           </Button>
         </div>
 
-        {quotaRemaining < 900 && (
+        {!hasEnoughQuota && (
           <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded border border-amber-200">
-            ⚠️ クォータ不足: 明日のリセット後に実行してください
+            ⚠️ クォータ不足: 残り{quotaRemaining.toLocaleString()} units（必要: {estimatedUnits.toLocaleString()} units）
+            <br />
+            明日のリセット後に実行するか、取得件数を減らしてください
           </div>
         )}
 
