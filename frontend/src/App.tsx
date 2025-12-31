@@ -4,6 +4,7 @@ import { Loader2, AlertCircle, Youtube, TrendingUp } from 'lucide-react';
 import { channelApi } from '@/services/api';
 import { ChannelCard } from '@/components/ChannelCard';
 import { SearchFilter } from '@/components/SearchFilter';
+import { SearchControl } from '@/components/SearchControl';
 import type { Channel } from '@/types/channel';
 import { Badge } from '@/components/ui/badge';
 
@@ -91,6 +92,9 @@ function App() {
             2024年以降に開始されたゲーム配信チャンネルを検索
           </p>
         </div>
+
+        {/* データ収集コントロール */}
+        <SearchControl />
 
         {/* クォータ情報 */}
         {data?.quota_status && (
