@@ -46,7 +46,6 @@ frontend/*.local
 
 # Package manager files
 frontend/.pnpm-debug.log*
-frontend/pnpm-lock.yaml
 
 # Build outputs
 frontend/dist/
