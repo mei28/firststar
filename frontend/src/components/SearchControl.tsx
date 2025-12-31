@@ -92,10 +92,10 @@ export function SearchControl() {
             <Input
               type="number"
               min="5"
-              max="200"
+              max="5000"
               value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
-              className="w-24"
+              className="w-32"
             />
             <span className="text-sm text-slate-600">件/キーワード</span>
             <Badge variant="outline" className="ml-auto">
