@@ -81,8 +81,8 @@ async def search_channels(
     max_results_per_keyword: int = Query(
         50,
         ge=1,
-        le=50,
-        description="キーワードあたりの最大取得件数（1-50）",
+        le=5000,
+        description="キーワードあたりの最大取得件数（1-5000）",
     ),
     use_cache: bool = Query(True, description="キャッシュを使用するか"),
 ):
