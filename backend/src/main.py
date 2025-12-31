@@ -151,12 +151,9 @@ async def get_database_channels(
             for channel in db_channels
         ]
 
-        # フィルタリング適用
-        filtered_channels = channel_filter.filter_channels(api_channels)
-
         return {
-            "channels": filtered_channels,
-            "total_count": len(filtered_channels),
+            "channels": api_channels,
+            "total_count": len(api_channels),
             "limit": limit,
             "offset": offset,
         }
