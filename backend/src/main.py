@@ -198,15 +198,24 @@ async def get_database_channels(
     - **order_by**: ソート順（例: "activity_score DESC", "subscriber_count DESC"）
     """
     try:
-        channels = await db_service.get_all_channels(
+        db_channels = await db_service.get_all_channels(
             limit=limit,
             offset=offset,
             order_by=order_by
         )
 
+        # DB形式からYouTube API形式に変換
+        api_channels = [
+            db_service.db_channel_to_api_format(channel)
+            for channel in db_channels
+        ]
+
+        # フィルタリング適用
+        filtered_channels = channel_filter.filter_channels(api_channels)
+
         return {
-            "channels": channels,
-            "total_count": len(channels),
+            "channels": filtered_channels,
+            "total_count": len(filtered_channels),
             "limit": limit,
             "offset": offset,
         }

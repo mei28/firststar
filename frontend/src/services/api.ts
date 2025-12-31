@@ -31,6 +31,16 @@ export const channelApi = {
     return response.data;
   },
 
+  getDatabaseChannels: async (): Promise<SearchResponse> => {
+    const response = await api.get<SearchResponse>('/channels/database', {
+      params: {
+        limit: 100,
+        order_by: 'activity_score DESC',
+      },
+    });
+    return response.data;
+  },
+
   getQuotaStatus: async () => {
     const response = await api.get('/quota/status');
     return response.data;
