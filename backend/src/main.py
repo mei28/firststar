@@ -125,65 +125,6 @@ async def search_channels(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/channels/{channel_id}")
-async def get_channel(
-    channel_id: str,
-    use_cache: bool = Query(True, description="キャッシュを使用するか"),
-):
-    """
-    チャンネルIDから詳細情報を取得
-
-    - **channel_id**: YouTubeチャンネルID
-    - **use_cache**: キャッシュ使用の有無
-    """
-    try:
-        channel = search_service.get_channel_by_id(channel_id, use_cache=use_cache)
-
-        if not channel:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Channel not found: {channel_id}",
-            )
-
-        return channel
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get channel: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/quota/status")
-async def get_quota_status():
-    """
-    APIクォータの使用状況を取得
-
-    Returns:
-        - **used**: 使用済みクォータ
-        - **remaining**: 残りクォータ
-        - **limit**: 1日の上限
-        - **warning_threshold**: 警告閾値
-        - **is_exceeded**: クォータ超過フラグ
-        - **is_warning**: 警告閾値到達フラグ
-        - **reset_at**: リセット時刻（ISO 8601形式）
-    """
-    try:
-        status = quota_manager.get_quota_status()
-        cache_stats = cache_service.get_cache_stats()
-        db_stats = await db_service.get_stats()
-
-        return {
-            "quota": status,
-            "cache": cache_stats,
-            "database": db_stats,
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to get quota status: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/api/channels/database")
 async def get_database_channels(
     limit: int = Query(100, ge=1, le=500),
@@ -222,6 +163,65 @@ async def get_database_channels(
 
     except Exception as e:
         logger.error(f"Failed to get database channels: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/quota/status")
+async def get_quota_status():
+    """
+    APIクォータの使用状況を取得
+
+    Returns:
+        - **used**: 使用済みクォータ
+        - **remaining**: 残りクォータ
+        - **limit**: 1日の上限
+        - **warning_threshold**: 警告閾値
+        - **is_exceeded**: クォータ超過フラグ
+        - **is_warning**: 警告閾値到達フラグ
+        - **reset_at**: リセット時刻（ISO 8601形式）
+    """
+    try:
+        status = quota_manager.get_quota_status()
+        cache_stats = cache_service.get_cache_stats()
+        db_stats = await db_service.get_stats()
+
+        return {
+            "quota": status,
+            "cache": cache_stats,
+            "database": db_stats,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get quota status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/channels/{channel_id}")
+async def get_channel(
+    channel_id: str,
+    use_cache: bool = Query(True, description="キャッシュを使用するか"),
+):
+    """
+    チャンネルIDから詳細情報を取得
+
+    - **channel_id**: YouTubeチャンネルID
+    - **use_cache**: キャッシュ使用の有無
+    """
+    try:
+        channel = search_service.get_channel_by_id(channel_id, use_cache=use_cache)
+
+        if not channel:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Channel not found: {channel_id}",
+            )
+
+        return channel
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get channel: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
