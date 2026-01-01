@@ -106,7 +106,7 @@ async def search_channels(
             )
 
         # 検索実行
-        result = search_service.search_channels(
+        result = await search_service.search_channels(
             keywords=keywords,
             published_after=published_after,
             max_results_per_keyword=max_results_per_keyword,

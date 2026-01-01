@@ -46,7 +46,7 @@ class ChannelSearchService:
         self.cache = cache_service or CacheService()
         self.filter = channel_filter or ChannelFilter()
 
-    def search_channels(
+    async def search_channels(
         self,
         keywords: Optional[List[str]] = None,
         published_after: str = "2024-01-01T00:00:00Z",
@@ -116,14 +116,14 @@ class ChannelSearchService:
         logger.info(f"Total unique channels found: {len(unique_channel_ids)}")
 
         # チャンネル詳細を取得
-        channels = self._get_channel_details(unique_channel_ids, use_cache)
+        channels = await self._get_channel_details(unique_channel_ids, use_cache)
         quota_used_in_details = len(unique_channel_ids) // 50 + (1 if len(unique_channel_ids) % 50 else 0)
 
         # フィルタリング
         filtered_channels = self.filter.filter_channels(channels)
 
-        # データベースに保存（非同期タスクとして実行）
-        self._save_channels_to_db(filtered_channels, keywords or self.DEFAULT_KEYWORDS)
+        # データベースに保存
+        await self._save_channels_to_db(filtered_channels, keywords or self.DEFAULT_KEYWORDS)
 
         # クォータ使用量を記録
         total_quota_used = quota_used_in_search + quota_used_in_details
@@ -141,25 +141,14 @@ class ChannelSearchService:
             "cached_keywords": cached_count,
         }
 
-    def _save_channels_to_db(self, channels: List[Dict[str, Any]], keywords: List[str]):
-        """チャンネルをデータベースに保存（同期的に実行）"""
-        import asyncio
-
-        async def save():
+    async def _save_channels_to_db(self, channels: List[Dict[str, Any]], keywords: List[str]):
+        """チャンネルをデータベースに保存"""
+        try:
             for channel in channels:
                 try:
                     await db_service.save_channel(channel, keywords)
                 except Exception as e:
                     logger.error(f"Failed to save channel {channel.get('id')}: {e}")
-
-        try:
-            # 新しいイベントループを作成して実行（uvloop互換）
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(save())
-            finally:
-                loop.close()
             logger.info(f"Saved {len(channels)} channels to database")
         except Exception as e:
             logger.error(f"Failed to save channels to database: {e}", exc_info=True)
@@ -203,7 +192,7 @@ class ChannelSearchService:
 
         return list(channel_ids)
 
-    def _get_channel_details(
+    async def _get_channel_details(
         self, channel_ids: List[str], use_cache: bool = True
     ) -> List[Dict[str, Any]]:
         """
@@ -221,8 +210,6 @@ class ChannelSearchService:
         Returns:
             チャンネル情報リスト
         """
-        import asyncio
-
         channels = []
         remaining_ids = channel_ids.copy()
 
@@ -237,15 +224,7 @@ class ChannelSearchService:
         db_channels_dict = {}
         if remaining_ids:
             try:
-                # 新しいイベントループを作成して実行（uvloop互換）
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    db_channels_dict = loop.run_until_complete(
-                        db_service.get_channels_by_ids(remaining_ids)
-                    )
-                finally:
-                    loop.close()
+                db_channels_dict = await db_service.get_channels_by_ids(remaining_ids)
 
                 # DB形式からAPI形式に変換
                 for channel_id, db_channel in db_channels_dict.items():
