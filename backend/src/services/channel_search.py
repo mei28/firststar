@@ -20,10 +20,9 @@ class ChannelSearchService:
         "生配信",
         "ライブ配信",
         "マインクラフト",
-        "APEX",
-        "ポケモン",
-        "スプラトゥーン",
-        "原神",
+        "LoL",
+        "league of legends",
+        "雑談",
     ]
 
     def __init__(
