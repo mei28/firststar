@@ -228,7 +228,7 @@ class DatabaseService:
                 "title": db_channel["title"],
                 "description": db_channel["description"],
                 "customUrl": db_channel["custom_url"],
-                "publishedAt": db_channel["published_at"].isoformat() + "Z" if db_channel.get("published_at") else None,
+                "publishedAt": db_channel["published_at"].isoformat().replace("+00:00", "Z") if db_channel.get("published_at") else None,
                 "thumbnails": {
                     "default": {"url": db_channel["thumbnail_url"], "width": 88, "height": 88},
                     "medium": {"url": db_channel["thumbnail_url"], "width": 240, "height": 240},
