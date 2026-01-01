@@ -145,18 +145,25 @@ class ChannelSearchService:
     def _save_channels_to_db(self, channels: List[Dict[str, Any]], keywords: List[str]):
         """チャンネルをデータベースに保存（同期的に実行）"""
         import asyncio
-        import nest_asyncio
 
         async def save():
             for channel in channels:
-                await db_service.save_channel(channel, keywords)
+                try:
+                    await db_service.save_channel(channel, keywords)
+                except Exception as e:
+                    logger.error(f"Failed to save channel {channel.get('id')}: {e}")
 
         try:
-            nest_asyncio.apply()
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(save())
+            # 新しいイベントループを作成して実行（uvloop互換）
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(save())
+            finally:
+                loop.close()
+            logger.info(f"Saved {len(channels)} channels to database")
         except Exception as e:
-            logger.warning(f"Failed to save channels to database: {e}")
+            logger.error(f"Failed to save channels to database: {e}", exc_info=True)
 
     def _search_videos_for_keyword(
         self, keyword: str, published_after: str, max_results: int
@@ -231,14 +238,15 @@ class ChannelSearchService:
         db_channels_dict = {}
         if remaining_ids:
             try:
-                # 新しいイベントループを作成して実行
-                import nest_asyncio
-                nest_asyncio.apply()
-
-                loop = asyncio.get_event_loop()
-                db_channels_dict = loop.run_until_complete(
-                    db_service.get_channels_by_ids(remaining_ids)
-                )
+                # 新しいイベントループを作成して実行（uvloop互換）
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    db_channels_dict = loop.run_until_complete(
+                        db_service.get_channels_by_ids(remaining_ids)
+                    )
+                finally:
+                    loop.close()
 
                 # DB形式からAPI形式に変換
                 for channel_id, db_channel in db_channels_dict.items():
@@ -252,7 +260,7 @@ class ChannelSearchService:
                 remaining_ids = [cid for cid in remaining_ids if cid not in db_channels_dict]
                 logger.info(f"Database: {len(db_channels_dict)} hits, {len(remaining_ids)} new channels")
             except Exception as e:
-                logger.warning(f"Failed to fetch from database: {e}")
+                logger.error(f"Failed to fetch from database: {e}", exc_info=True)
 
         # 3. 新規チャンネルのみYouTube APIから取得
         if remaining_ids:
