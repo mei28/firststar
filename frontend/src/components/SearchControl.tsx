@@ -30,7 +30,7 @@ export function SearchControl() {
   });
 
   const handleSearch = () => {
-    const estimatedUnits = Math.ceil(maxResults / 50) * 900;
+    const estimatedUnits = Math.ceil(maxResults / 50) * 100 * 8; // 8キーワード × 100 units
     if (confirm(`${maxResults}件/キーワードで検索を実行しますか?\n\n※ APIクォータを消費します（約${estimatedUnits.toLocaleString()} units）`)) {
       searchMutation.mutate(maxResults);
     }
@@ -40,7 +40,7 @@ export function SearchControl() {
   const quotaLimit = quotaData?.quota?.limit || 10000;
   const quotaRemaining = quotaData?.quota?.remaining || (quotaLimit - quotaUsed);
   const quotaPercentage = (quotaUsed / quotaLimit) * 100;
-  const estimatedUnits = Math.ceil(maxResults / 50) * 900;
+  const estimatedUnits = Math.ceil(maxResults / 50) * 100 * 8; // 8キーワード × 100 units
   const hasEnoughQuota = quotaRemaining >= estimatedUnits;
 
   return (
@@ -99,11 +99,11 @@ export function SearchControl() {
             />
             <span className="text-sm text-slate-600">件/キーワード</span>
             <Badge variant="outline" className="ml-auto">
-              約{Math.ceil(maxResults / 50) * 900} units消費
+              約{Math.ceil(maxResults / 50) * 100 * 8} units消費
             </Badge>
           </div>
           <p className="text-xs text-slate-500">
-            デフォルトキーワード9種類 × {maxResults}件ずつ検索します
+            デフォルトキーワード8種類 × {maxResults}件ずつ検索します
           </p>
         </div>
 
