@@ -10,18 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class YouTubeClient:
-    """YouTube Data API v3クライアント"""
+    """YouTube Data API v3クライアント（複数APIキー対応）"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_keys: Optional[List[str]] = None):
         """
         初期化
 
         Args:
-            api_key: YouTube Data API キー（指定がない場合は設定から取得）
+            api_keys: YouTube Data API キーのリスト（指定がない場合は設定から取得）
         """
-        self.api_key = api_key or settings.youtube_api_key
-        self.youtube = build("youtube", "v3", developerKey=self.api_key)
+        self.api_keys = api_keys or settings.youtube_api_keys
+        self.current_key_index = 0
+        self.youtube = build("youtube", "v3", developerKey=self.api_keys[self.current_key_index])
         self._quota_used = 0
+        logger.info(f"YouTubeClient initialized with {len(self.api_keys)} API key(s)")
 
     def search_videos(
         self,
@@ -75,6 +77,11 @@ class YouTubeClient:
                 # クォータ超過またはAPIキーエラー
                 error_reason = e.error_details[0].get("reason", "unknown")
                 if error_reason == "quotaExceeded":
+                    # 次のAPIキーに切り替え
+                    if self._switch_to_next_api_key():
+                        logger.warning(f"Switched to API key #{self.current_key_index + 1}, retrying...")
+                        # リトライ
+                        return self.search_videos(keyword, published_after, max_results, page_token, region_code, video_category_id)
                     raise Exception("APIクォータを超過しました")
                 elif error_reason == "rateLimitExceeded":
                     raise Exception("レート制限を超過しました")
@@ -142,3 +149,20 @@ class YouTubeClient:
     def reset_quota_counter(self):
         """クォータカウンターをリセット"""
         self._quota_used = 0
+
+    def _switch_to_next_api_key(self) -> bool:
+        """
+        次のAPIキーに切り替え
+
+        Returns:
+            切り替え成功ならTrue、すべてのキーを使い切った場合False
+        """
+        if self.current_key_index + 1 < len(self.api_keys):
+            self.current_key_index += 1
+            new_key = self.api_keys[self.current_key_index]
+            self.youtube = build("youtube", "v3", developerKey=new_key)
+            logger.info(f"Switched to API key #{self.current_key_index + 1}/{len(self.api_keys)}")
+            return True
+        else:
+            logger.error(f"All {len(self.api_keys)} API keys exhausted")
+            return False

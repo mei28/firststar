@@ -5,7 +5,7 @@ from typing import List, Optional
 class Settings(BaseSettings):
     """アプリケーション設定"""
 
-    # YouTube Data API v3
+    # YouTube Data API v3 (カンマ区切りで複数設定可能)
     youtube_api_key: str
 
     # Redis
@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         """CORSオリジンをリストに変換"""
         return [origin.strip() for origin in self.cors_origins.split(",")]
+
+    @property
+    def youtube_api_keys(self) -> List[str]:
+        """YouTube APIキーをリストに変換（カンマ区切り対応）"""
+        return [key.strip() for key in self.youtube_api_key.split(",") if key.strip()]
 
 
 # グローバル設定インスタンス
